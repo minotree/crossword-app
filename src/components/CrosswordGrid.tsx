@@ -1,42 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import type { CrosswordCell, CrosswordClue } from '../utils/crosswordGenerator';
+import { useCrosswordGame } from '../hooks/useCrosswordGame';
 
 interface CrosswordGridProps {
   grid: (CrosswordCell | null)[][];
   clues: CrosswordClue[];
-  activeClue: CrosswordClue | null;
-  onCellClick: (cell: CrosswordCell) => void;
-  onComplete?: () => void;
 }
 
 export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
   grid,
-  activeClue,
-  onCellClick,
 }) => {
   const gridSize = grid.length;
-  const [userInputs, setUserInputs] = useState<{ [key: string]: string }>({});
+  const {
+    activeCell,
+    activeDirection,
+    userInputs,
+    setActiveCell,
+    toggleDirection,
+    handleInputChange,
+    handleKeyDown,
+  } = useCrosswordGame({ grid, clues });
 
-  const handleInputChange = (x: number, y: number, val: string) => {
-    const char = val.slice(-1).toUpperCase();
-    const key = `${x},${y}`;
-    setUserInputs((prev) => ({ ...prev, [key]: char }));
-
-    // 자동 다음 셀 포커스 이동 (가로/세로 방향 지원)
-    if (char && activeClue) {
-      const nextX = activeClue.direction === 'across' ? x + 1 : x;
-      const nextY = activeClue.direction === 'down' ? y + 1 : y;
-      const nextInput = document.getElementById(`cell-${nextX}-${nextY}`);
-      if (nextInput) (nextInput as HTMLInputElement).focus();
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent, x: number, y: number) => {
-    if (e.key === 'Backspace' && !userInputs[`${x},${y}`] && activeClue) {
-      const prevX = activeClue.direction === 'across' ? x - 1 : x;
-      const prevY = activeClue.direction === 'down' ? y - 1 : y;
-      const prevInput = document.getElementById(`cell-${prevX}-${prevY}`);
-      if (prevInput) (prevInput as HTMLInputElement).focus();
+  const handleCellClick = (x: number, y: number) => {
+    const cell = grid[y][x];
+    if (cell) {
+      if (activeCell && activeCell.x === x && activeCell.y === y) {
+        toggleDirection();
+      } else {
+        setActiveCell({ x, y });
+      }
     }
   };
 
@@ -60,8 +52,9 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
           }
 
           const isHighlighted =
-            activeClue &&
-            cell.wordId === activeClue.wordId;
+            activeCell &&
+            cell.wordId === activeCell.wordId &&
+            activeDirection === cell.direction;
 
           const key = `${x},${y}`;
           const currentVal = userInputs[key] || '';
@@ -69,7 +62,7 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
           return (
             <div
               key={`${x}-${y}`}
-              onClick={() => onCellClick(cell)}
+              onClick={() => handleCellClick(x, y)}
               style={{
                 position: 'relative',
                 backgroundColor: isHighlighted ? '#e3f2fd' : '#fff',
