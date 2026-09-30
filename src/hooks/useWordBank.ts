@@ -16,20 +16,15 @@ export interface WordItem {
 const STORAGE_KEY = 'crossword_word_bank';
 
 export const useWordBank = () => {
-  // 1. 초기 데이터 로드 시 word가 null/empty인 잘못된 항목 전처리 및 제거
   const [words, setWords] = useState<WordItem[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (!saved) return [];
       const parsed = JSON.parse(saved);
       if (!Array.isArray(parsed)) return [];
-      
-      // word 속성이 유효한 문자열인 객체만 선별
       return parsed.filter(
-        (w): w is WordItem => 
-          Boolean(w) && 
-          typeof w.word === 'string' && 
-          w.word.trim() !== ''
+        (w): w is WordItem =>
+          Boolean(w) && typeof w.word === 'string' && w.word.trim() !== ''
       );
     } catch {
       return [];
@@ -40,7 +35,6 @@ export const useWordBank = () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
   }, [words]);
 
-  // 2. CSV 파일 등록 처리
   const addWordsFromCSV = (csvText: string) => {
     Papa.parse(csvText, {
       header: true,
@@ -65,14 +59,12 @@ export const useWordBank = () => {
         const validNewWords: WordItem[] = [];
 
         rawData.forEach((row) => {
-          // 행 데이터 및 word 값 검증 (null/undefined/non-string 방지)
           if (!row || typeof row.word !== 'string') return;
           const wordStr = row.word.trim();
           if (!wordStr) return;
 
           const meaningStr = row.meaning ? String(row.meaning).trim() : '뜻 없음';
 
-          // 옵셔널 체이닝과 안전한 조건문으로 중복 체크
           const isDuplicateInCurrent = words.some(
             (w) => Boolean(w?.word) && w.word.toLowerCase() === wordStr.toLowerCase()
           );
@@ -90,6 +82,7 @@ export const useWordBank = () => {
               example: row.example ? String(row.example).trim() : '',
               exampleMeaning: row.exampleMeaning ? String(row.exampleMeaning).trim() : '',
               isUsed: false,
+              isQuizUsed: false,
             });
           }
         });
@@ -104,15 +97,12 @@ export const useWordBank = () => {
     });
   };
 
+  // 사용된 단어들 isQuizUsed = true 및 isUsed = true 처리 (단일 선언)
   const markWordsAsUsed = (usedIds: string[]) => {
     setWords((prev) =>
-      prev.map((w) => (usedIds.includes(w.id) ? { ...w, isUsed: true } : w))
-    );
-  };
-
-  const markWordsAsUsed = (usedIds: string[]) => {
-    setWords((prev) =>
-      prev.map((w) => (usedIds.includes(w.id) ? { ...w, isQuizUsed: true } : w))
+      prev.map((w) =>
+        usedIds.includes(w.id) ? { ...w, isUsed: true, isQuizUsed: true } : w
+      )
     );
   };
 
