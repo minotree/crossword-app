@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IonApp, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel, IonTabs, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
 import { home, book, settings } from 'ionicons/icons';
@@ -6,9 +6,6 @@ import Home from './pages/Home';
 import WordBankPage from './pages/WordBankPage';
 import SettingsPage from './pages/SettingsPage';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
-import { IonReactRouter } from '@ionic/react-router';
-import Home from './pages/Home';
 
 /* Ionic Core CSS */
 import '@ionic/react/css/core.css';
@@ -35,32 +32,35 @@ const App: React.FC = () => {
     setTotalWords(100);
     setUnusedWords(50);
   }, []);
-  <IonApp>
-    <IonReactRouter>
-      <IonTabs>
-        <IonRouterOutlet>
-          <Route path="/home" element={<Home difficulty={difficulty} totalWords={totalWords} unusedWords={unusedWords} />} />
-          <Route path="/word-bank" element={<WordBankPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/" element={<Navigate to="/home" replace />} />
-        </IonRouterOutlet>
-        <IonTabBar slot="bottom">
-          <IonTabButton tab="home" href="/home">
-            <IonIcon icon={home} />
-            <IonLabel>Play Quiz</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="word-bank" href="/word-bank">
-            <IonIcon icon={book} />
-            <IonLabel>Word Bank</IonLabel>
-          </IonTabButton>
-          <IonTabButton tab="settings" href="/settings">
-            <IonIcon icon={settings} />
-            <IonLabel>Settings</IonLabel>
-          </IonTabButton>
-        </IonTabBar>
-      </IonTabs>
-    </IonReactRouter>
-  </IonApp>
-);
+
+  return (
+    <IonApp>
+      <IonReactRouter>
+        <IonTabs>
+          <IonRouterOutlet>
+            <Route path="/home" element={<Home difficulty={difficulty} totalWords={totalWords} unusedWords={unusedWords} />} />
+            <Route path="/word-bank" element={<WordBankPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/" element={<Navigate to="/home" replace />} />
+          </IonRouterOutlet>
+          <IonTabBar slot="bottom">
+            <IonTabButton tab="home" href="/home">
+              <IonIcon icon={home} />
+              <IonLabel>Play Quiz</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="word-bank" href="/word-bank">
+              <IonIcon icon={book} />
+              <IonLabel>Word Bank</IonLabel>
+            </IonTabButton>
+            <IonTabButton tab="settings" href="/settings">
+              <IonIcon icon={settings} />
+              <IonLabel>Settings</IonLabel>
+            </IonTabButton>
+          </IonTabBar>
+        </IonTabs>
+      </IonReactRouter>
+    </IonApp>
+  );
+};
 
 export default App;
