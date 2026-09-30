@@ -1,167 +1,85 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   IonPage,
   IonHeader,
   IonToolbar,
   IonTitle,
   IonContent,
-  IonButtons,
   IonButton,
   IonIcon,
-  IonSegment,
-  IonSegmentButton,
-  IonLabel,
-  IonFooter,
 } from '@ionic/react';
-import { refreshOutline, bookOutline, bulbOutline } from 'ionicons/icons';
-import CrosswordGrid from '../components/CrosswordGrid';
-import { useCrosswordGame } from '../hooks/useCrosswordGame';
-import WordBankModal from '../components/WordBankModal';
+import { gameControllerOutline, bookOutline } from 'ionicons/icons';
+import { useNavigate } from 'react-router-dom';
 
 export const Home: React.FC = () => {
-  const [selectedGridSize, setSelectedGridSize] = useState<number>(10);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const game = useCrosswordGame({ gridSize: selectedGridSize } as any) || {};
-
-  const {
-    grid = [],
-    clues = { across: [], down: [] },
-    userInputs = {},
-    activeCell = null,
-    activeDirection = 'across',
-    hintsLeft = 0,
-    handleCellClick = () => {},
-    handleInputChange = () => {},
-    handleKeyDown = () => {},
-    generateNewGame,
-    revealHint,
-  } = game as any;
+  const navigate = useNavigate();
 
   return (
     <IonPage>
       <IonHeader>
         <IonToolbar color="primary">
-          <IonTitle>영어 단어 십자낱말 풀이</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={() => setIsModalOpen(true)}>
-              <IonIcon slot="icon-only" icon={bookOutline} />
-            </IonButton>
-            <IonButton onClick={() => generateNewGame && generateNewGame(selectedGridSize)}>
-              <IonIcon slot="icon-only" icon={refreshOutline} />
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-
-        {/* 상단 난이도 선택 메뉴 */}
-        <IonToolbar>
-          <IonSegment
-            value={selectedGridSize.toString()}
-            onIonChange={(e) => {
-              const newSize = Number(e.detail.value);
-              setSelectedGridSize(newSize);
-              if (generateNewGame) generateNewGame(newSize);
-            }}
-          >
-            <IonSegmentButton value="8">
-              <IonLabel>쉬움 (8x8)</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="10">
-              <IonLabel>보통 (10x10)</IonLabel>
-            </IonSegmentButton>
-            <IonSegmentButton value="12">
-              <IonLabel>어려움 (12x12)</IonLabel>
-            </IonSegmentButton>
-          </IonSegment>
+          <IonTitle style={{ textAlign: 'center' }}>영어 단어 십자 낱말 풀이</IonTitle>
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-          {grid && grid.length > 0 ? (
-            {/* CrosswordGrid를 타입 단언(as any) 처리하여 direction 속성 체크 우회 */}
-            <CrosswordGrid
-              {...({
-                grid,
-                userInputs,
-                activeCell,
-                direction: activeDirection,
-                onCellClick: handleCellClick,
-                onInputChange: handleInputChange,
-                onKeyDown: handleKeyDown,
-              } as any)}
+      <IonContent className="ion-padding" style={{ textAlign: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+            maxWidth: '400px',
+            margin: '0 auto',
+            paddingBottom: '40px',
+          }}
+        >
+          <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
+            <img 
+              src="/src/assets/family.jpg" 
+              alt="가족 사진" 
+              style={{ 
+                width: '180px', 
+                height: '180px', 
+                objectFit: 'cover', 
+                borderRadius: '50%', 
+                border: '4px solid #fff',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)' 
+              }} 
             />
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px 0' }}>퍼즐 생성 중...</div>
-          )}
-        </div>
-
-        {/* 힌트 목록 */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div>
-            <h3 style={{ textAlign: 'center', fontWeight: 'bold' }}>
-              가로 힌트<br />
-              <span style={{ fontSize: '14px', color: '#666' }}>(Across)</span>
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(clues?.across || []).map((item: any, idx: number) => (
-                <div
-                  key={`across-${item?.number || idx}`}
-                  style={{
-                    padding: '8px 12px',
-                    backgroundColor: '#f4f5f8',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                  }}
-                >
-                  <strong>{item?.number || idx + 1}.</strong> {item?.clue || item?.text || ''}
-                </div>
-              ))}
-            </div>
           </div>
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '12px', color: '#333' }}>
+            영어 단어 십자낱말 풀이에 오신 것을 환영합니다!
+          </h1>
+          <p style={{ fontSize: '14px', color: '#666', lineHeight: '1.5', marginBottom: '30px' }}>
+            단어장에 저장된 단어들로 맞춤형 십자낱말 퍼즐을 즐기고 영어 실력을 키워보세요.
+          </p>
 
-          <div>
-            <h3 style={{ textAlign: 'center', fontWeight: 'bold' }}>
-              세로 힌트<br />
-              <span style={{ fontSize: '14px', color: '#666' }}>(Down)</span>
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(clues?.down || []).map((item: any, idx: number) => (
-                <div
-                  key={`down-${item?.number || idx}`}
-                  style={{
-                    padding: '8px 12px',
-                    backgroundColor: '#f4f5f8',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                  }}
-                >
-                  <strong>{item?.number || idx + 1}.</strong> {item?.clue || item?.text || ''}
-                </div>
-              ))}
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%', gap: '12px' }}>
+            <IonButton
+              expand="block"
+              size="large"
+              color="primary"
+              onClick={() => navigate('/quiz')}
+            >
+              <IonIcon slot="start" icon={gameControllerOutline} />
+              퍼즐 퀴즈 시작하기
+            </IonButton>
+
+            <IonButton
+              expand="block"
+              size="large"
+              fill="outline"
+              color="primary"
+              onClick={() => navigate('/wordbank')}
+            >
+              <IonIcon slot="start" icon={bookOutline} />
+              단어장 관리하기
+            </IonButton>
           </div>
         </div>
-
-        <WordBankModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       </IonContent>
-
-      <IonFooter>
-        <IonToolbar color="light">
-          <IonButton
-            expand="block"
-            color="warning"
-            onClick={() => revealHint && revealHint()}
-            disabled={hintsLeft !== undefined && hintsLeft <= 0}
-            style={{ margin: '8px 16px' }}
-          >
-            <IonIcon slot="start" icon={bulbOutline} />
-            힌트 보기 {hintsLeft !== undefined ? `(남은 힌트 ${hintsLeft}개)` : ''}
-          </IonButton>
-        </IonToolbar>
-      </IonFooter>
     </IonPage>
   );
 };

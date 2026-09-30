@@ -11,21 +11,36 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
   const [activeDirection, setActiveDirection] = useState<'across' | 'down'>('across');
   const [activeClue, setActiveClue] = useState<CrosswordClue | null>(null);
   const [userInputs, setUserInputs] = useState<{ [key: string]: string }>({});
+  const [hintsLeft, setHintsLeft] = useState<number>(3);
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
-  const [hintCount, setHintCount] = useState<number>(5); // Initial hint count
-  const [startTime, setStartTime] = useState<number>(Date.now());
 
-  // 사용자가 힌트 버튼을 클릭했는지 감지하는 플래그
+  const [elapsedTime, setElapsedTime] = useState<number>(0);
+  const [accuracyScore, setAccuracyScore] = useState<number>(100);
+
+  const startTimeRef = useRef<number>(Date.now());
+  const totalAttemptsRef = useRef<number>(0);
+  const correctAttemptsRef = useRef<number>(0);
   const isClueSelectedRef = useRef<boolean>(false);
+
+  // 그리드 변경 시 게임 상태 초기화
+  useEffect(() => {
+    setUserInputs({});
+    setIsCompleted(false);
+    setHintsLeft(3);
+    setElapsedTime(0);
+    setAccuracyScore(100);
+    startTimeRef.current = Date.now();
+    totalAttemptsRef.current = 0;
+    correctAttemptsRef.current = 0;
+  }, [grid]);
 
   // 셀 선택 시 해당 힌트 매칭
   useEffect(() => {
     if (activeCell && grid && grid[activeCell.y]) {
       const cell = grid[activeCell.y][activeCell.x];
       if (cell) {
-        // 힌트 목록 버튼을 직접 클릭한 상태라면 방향을 강제로 변경하지 않음
         if (isClueSelectedRef.current) {
-          isClueSelectedRef.current = false; // 플래그 초기화
+          isClueSelectedRef.current = false;
           const exactClue = clues.find(
             (c) => c.wordId === cell.wordId && c.direction === activeDirection
           );
@@ -33,12 +48,10 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
           return;
         }
 
-        // 1순위: 현재 셀의 wordId와 activeDirection이 모두 일치하는 힌트
         let matchedClue = clues.find(
           (c) => c.wordId === cell.wordId && c.direction === activeDirection
         );
 
-        // 2순위: 현재 방향에 일치하는 힌트가 없을 때만 다른 방향의 힌트로 전환
         if (!matchedClue) {
           matchedClue = clues.find((c) => c.wordId === cell.wordId);
           if (matchedClue) {
@@ -53,9 +66,9 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     }
   }, [activeCell, activeDirection, clues, grid]);
 
-  // 완성 여부 검사
+  // 게임 완성 검사 및 정확도/소요 시간 계산
   useEffect(() => {
-    if (!grid || grid.length === 0) return;
+    if (!grid || grid.length === 0 || isCompleted) return;
 
     let allCorrect = true;
     let filledCount = 0;
@@ -77,22 +90,39 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     }
 
     if (totalCells > 0 && filledCount === totalCells && allCorrect) {
-      setIsCompleted(true);
-    } else {
-      setIsCompleted(false);
-    }
-  }, [userInputs, grid]);
+      const timeSpent = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      setElapsedTime(timeSpent);
 
-  // 가로/세로 방향 전환
+      const attempts = totalAttemptsRef.current || totalCells;
+      const score = Math.max(0, Math.min(100, Math.round((totalCells / attempts) * 100)));
+      setAccuracyScore(score);
+
+      setIsCompleted(true);
+    }
+  }, [userInputs, grid, isCompleted]);
+
+  // 단일 글자 힌트 보기
+  const revealSingleLetterHint = () => {
+    if (hintsLeft <= 0 || !activeCell || !grid) return;
+
+    const cell = grid[activeCell.y]?.[activeCell.x];
+    if (!cell) return;
+
+    const key = `${activeCell.x},${activeCell.y}`;
+    const correctLetter = cell.letter.toUpperCase();
+
+    setUserInputs((prev) => ({ ...prev, [key]: correctLetter }));
+    setHintsLeft((prev) => prev - 1);
+  };
+
   const toggleDirection = () => {
     setActiveDirection((prev) => (prev === 'across' ? 'down' : 'across'));
   };
 
-  // 힌트 선택 시 실행
   const selectClue = (clue: CrosswordClue) => {
-    isClueSelectedRef.current = true; // 힌트 직접 선택 플래그 ON
+    isClueSelectedRef.current = true;
     setActiveClue(clue);
-    setActiveDirection(clue.direction); // 가로(across) 또는 세로(down) 정확히 반영
+    setActiveDirection(clue.direction);
 
     const targetX = clue.col;
     const targetY = clue.row;
@@ -104,7 +134,6 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     }
   };
 
-  // 다음 유효한 셀 좌표 반환
   const getNextCell = (x: number, y: number, dir: 'across' | 'down') => {
     const nextX = dir === 'across' ? x + 1 : x;
     const nextY = dir === 'down' ? y + 1 : y;
@@ -121,7 +150,6 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     return null;
   };
 
-  // 이전 유효한 셀 좌표 반환
   const getPrevCell = (x: number, y: number, dir: 'across' | 'down') => {
     const prevX = dir === 'across' ? x - 1 : x;
     const prevY = dir === 'down' ? y - 1 : y;
@@ -138,42 +166,19 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     return null;
   };
 
-  const checkAnswers = () => {
-    let allCorrect = true;
-    let filledCount = 0;
-    let totalCells = 0;
-
-    for (let r = 0; r < grid.length; r++) {
-      for (let c = 0; c < grid[r].length; c++) {
-        const cell = grid[r][c];
-        if (cell) {
-          totalCells++;
-          const input = userInputs[`${c},${r}`] || '';
-          if (input.toUpperCase() === cell.letter.toUpperCase()) {
-            filledCount++;
-          } else {
-            allCorrect = false;
-          }
-        }
-      }
-    }
-
-    if (totalCells > 0 && filledCount === totalCells && allCorrect) {
-      setIsCompleted(true);
-      const usedWordIds = clues.map((clue) => clue.wordId);
-      markWordsAsUsed(usedWordIds);
-      const elapsedTime = Date.now() - startTime;
-      const accuracyScore = (filledCount / totalCells) * 100;
-      console.log('Elapsed Time:', elapsedTime, 'ms');
-      console.log('Accuracy Score:', accuracyScore.toFixed(2), '%');
-    }
-  };
-
   const handleInputChange = (x: number, y: number, val: string) => {
     const char = val.slice(-1).toUpperCase();
     const key = `${x},${y}`;
+
+    if (char) {
+      totalAttemptsRef.current += 1;
+      const targetCell = grid[y]?.[x];
+      if (targetCell && targetCell.letter.toUpperCase() === char) {
+        correctAttemptsRef.current += 1;
+      }
+    }
+
     setUserInputs((prev) => ({ ...prev, [key]: char }));
-    checkAnswers();
 
     if (char) {
       const next = getNextCell(x, y, activeDirection);
@@ -185,40 +190,7 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     }
   };
 
-  const revealSingleLetterHint = (x: number, y: number) => {
-    if (grid[y] && grid[y][x]) {
-      const key = `${x},${y}`;
-      setUserInputs((prev) => ({ ...prev, [key]: grid[y][x].letter }));
-      setHintCount((prev) => prev - 1);
-    }
-  };
-
-  const handleWordDetail = (wordId: string) => {
-    // Implement navigation to word detail modal
-    console.log('Navigate to word detail for:', wordId);
-  };
-    if (grid[y] && grid[y][x]) {
-      const key = `${x},${y}`;
-      setUserInputs((prev) => ({ ...prev, [key]: grid[y][x].letter }));
-      setHintCount((prev) => prev - 1);
-    }
-  };
-
-  const handleWordDetail = (wordId: string) => {
-    // Implement navigation to word detail modal
-    console.log('Navigate to word detail for:', wordId);
-  };
-    if (grid[y] && grid[y][x]) {
-      const key = `${x},${y}`;
-      setUserInputs((prev) => ({ ...prev, [key]: grid[y][x].letter }));
-      setHintCount((prev) => prev - 1);
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent, x: number, y: number) => {
-    if (e.key === 'h' && hintCount > 0) {
-      revealSingleLetterHint(x, y);
-    }
     const key = `${x},${y}`;
 
     if (e.key === 'Backspace') {
@@ -262,10 +234,14 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     activeDirection,
     activeClue,
     userInputs,
+    hintsLeft,
     isCompleted,
+    elapsedTime,
+    accuracyScore,
     setActiveCell,
     selectClue,
     toggleDirection,
+    revealSingleLetterHint,
     handleInputChange,
     handleKeyDown,
   };

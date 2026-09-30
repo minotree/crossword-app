@@ -21,7 +21,7 @@ import {
   codeWorkingOutline,
 } from 'ionicons/icons';
 import useWordBank from '../hooks/useWordBank';
-
+import '../App.css';
 export const SettingsPage: React.FC = () => {
   const { words, resetQuizHistory, clearWords } = useWordBank();
   const [showResetAlert, setShowResetAlert] = useState(false);
@@ -90,7 +90,9 @@ export const SettingsPage: React.FC = () => {
             <IonLabel>
               <h2>앱 이름 및 버전</h2>
               <p>English Crossword Puzzle v1.0.0</p>
-              <p className="highlight">유민이를 위하여</p>
+              <p style={{ marginTop: '4px' }}>
+                <span className="highlight">유민이를 위하여</span>
+              </p>
             </IonLabel>
           </IonItem>
 

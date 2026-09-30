@@ -17,10 +17,13 @@ export const ClueList: React.FC<ClueListProps> = ({ clues, activeClue, onSelectC
       <div style={{ flex: 1 }}>
         <h3>가로 힌트 (Across)</h3>
         {acrossClues.map((clue) => {
-          const isSelected = activeClue?.id === clue.id;
+          const clueKey = `${clue.direction}-${clue.number}`;
+          const activeKey = activeClue ? `${activeClue.direction}-${activeClue.number}` : null;
+          const isSelected = activeKey === clueKey;
+
           return (
             <div
-              key={clue.id}
+              key={clueKey}
               onClick={() => onSelectClue(clue)}
               style={{
                 padding: '8px 12px',
@@ -42,10 +45,13 @@ export const ClueList: React.FC<ClueListProps> = ({ clues, activeClue, onSelectC
       <div style={{ flex: 1 }}>
         <h3>세로 힌트 (Down)</h3>
         {downClues.map((clue) => {
-          const isSelected = activeClue?.id === clue.id;
+          const clueKey = `${clue.direction}-${clue.number}`;
+          const activeKey = activeClue ? `${activeClue.direction}-${activeClue.number}` : null;
+          const isSelected = activeKey === clueKey;
+
           return (
             <div
-              key={clue.id}
+              key={clueKey}
               onClick={() => onSelectClue(clue)}
               style={{
                 padding: '8px 12px',

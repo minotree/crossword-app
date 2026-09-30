@@ -11,6 +11,7 @@ export interface WordItem {
   exampleMeaning?: string;
   isUsed?: boolean;
   isQuizUsed?: boolean;
+  isBookmarked?: boolean;
 }
 
 const STORAGE_KEY = 'crossword_word_bank';
@@ -31,9 +32,47 @@ export const useWordBank = () => {
     }
   });
 
+  // 데이터 변경 및 동기화를 안전하게 처리하는 헬퍼 함수 (무한 루프 방지)
+  const saveAndSync = (newWords: WordItem[]) => {
+    setWords(newWords);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newWords));
+      window.dispatchEvent(new Event('wordbank-storage-updated'));
+    } catch (err) {
+      console.error('Storage save error:', err);
+    }
+  };
+
+  // 다른 탭이나 설정 화면 등에서 변경된 경우 동기화
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
-  }, [words]);
+    const handleSync = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) {
+          setWords([]);
+          return;
+        }
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setWords((prev) => {
+            if (JSON.stringify(prev) !== JSON.stringify(parsed)) {
+              return parsed;
+            }
+            return prev;
+          });
+        }
+      } catch (err) {
+        console.error('Storage sync error:', err);
+      }
+    };
+
+    window.addEventListener('wordbank-storage-updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('wordbank-storage-updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   const addWordsFromCSV = (csvText: string) => {
     Papa.parse(csvText, {
@@ -83,12 +122,13 @@ export const useWordBank = () => {
               exampleMeaning: row.exampleMeaning ? String(row.exampleMeaning).trim() : '',
               isUsed: false,
               isQuizUsed: false,
+              isBookmarked: false,
             });
           }
         });
 
         if (validNewWords.length > 0) {
-          setWords((prev) => [...prev, ...validNewWords]);
+          saveAndSync([...words, ...validNewWords]);
         }
       },
       error: (err: any) => {
@@ -97,28 +137,44 @@ export const useWordBank = () => {
     });
   };
 
-  // 사용된 단어들 isQuizUsed = true 및 isUsed = true 처리 (단일 선언)
   const markWordsAsUsed = (usedIds: string[]) => {
-    setWords((prev) =>
-      prev.map((w) =>
-        usedIds.includes(w.id) ? { ...w, isUsed: true, isQuizUsed: true } : w
-      )
+    const updated = words.map((w) =>
+      usedIds.includes(w.id) ? { ...w, isUsed: true, isQuizUsed: true } : w
     );
+    saveAndSync(updated);
   };
 
-  const getBookmarkedWords = () => {
-    return words.filter((w) => w.isUsed);
+  const resetQuizHistory = () => {
+    const updated = words.map((w) => ({
+      ...w,
+      isUsed: false,
+      isQuizUsed: false,
+    }));
+    saveAndSync(updated);
+  };
+
+  const toggleBookmark = (id: string) => {
+    const updated = words.map((w) => (w.id === id ? { ...w, isBookmarked: !w.isBookmarked } : w));
+    saveAndSync(updated);
+  };
+
+  const deleteWord = (id: string) => {
+    const updated = words.filter((w) => w.id !== id);
+    saveAndSync(updated);
   };
 
   const clearWords = () => {
-    setWords([]);
     localStorage.removeItem(STORAGE_KEY);
+    saveAndSync([]);
   };
 
   return {
     words,
     addWordsFromCSV,
     markWordsAsUsed,
+    resetQuizHistory,
+    toggleBookmark,
+    deleteWord,
     clearWords,
   };
 };

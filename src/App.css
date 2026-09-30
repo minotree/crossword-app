@@ -1,12 +1,18 @@
+/* 반짝반짝 애니메이션 정의 */
 .highlight {
-  animation: blink 1s step-start 0s infinite;
+  display: inline-block;
+  font-weight: bold;
+  color: #ff9800 !important; /* 원하시는 강조 색상 (예: 주황/금색) */
+  animation: blink-glow 1.5s ease-in-out infinite !important;
 }
 
-@keyframes blink {
-  from, to {
-    color: transparent;
+@keyframes blink-glow {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 8px rgba(255, 152, 0, 0.8);
   }
   50% {
-    color: inherit;
+    opacity: 0.2;
+    text-shadow: none;
   }
 }
