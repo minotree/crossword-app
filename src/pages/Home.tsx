@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   IonPage,
   IonHeader,
@@ -8,101 +8,160 @@ import {
   IonButtons,
   IonButton,
   IonIcon,
+  IonSegment,
+  IonSegmentButton,
+  IonLabel,
+  IonFooter,
 } from '@ionic/react';
-import { bookOutline, refreshOutline } from 'ionicons/icons';
-import useWordBank from '../hooks/useWordBank';
-import useCrosswordGame from '../hooks/useCrosswordGame';
-import generateCrosswordGame from '../utils/crosswordGenerator';
-import type { CrosswordGameData } from '../utils/crosswordGenerator';
+import { refreshOutline, bookOutline, bulbOutline } from 'ionicons/icons';
 import CrosswordGrid from '../components/CrosswordGrid';
-import ClueList from '../components/ClueList';
+import { useCrosswordGame } from '../hooks/useCrosswordGame';
 import WordBankModal from '../components/WordBankModal';
 
-const Home: React.FC = () => {
-  const { words, markWordsAsUsed } = useWordBank();
-  const [gameData, setGameData] = useState<CrosswordGameData | null>(null);
+export const Home: React.FC = () => {
+  const [selectedGridSize, setSelectedGridSize] = useState<number>(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Crossword 게임 커스텀 훅 호출
-  const game = useCrosswordGame({
-    grid: gameData?.grid || [],
-    clues: gameData?.clues || [],
-  });
+  const game = useCrosswordGame({ gridSize: selectedGridSize } as any) || {};
 
-  const startNewGame = () => {
-    if (words.length === 0) {
-      setGameData(null);
-      return;
-    }
-    const newGame = generateCrosswordGame(words, 10);
-    if (newGame) {
-      setGameData(newGame);
-      markWordsAsUsed(newGame.usedWordIds);
-    }
-  };
-
-  useEffect(() => {
-    if (words.length > 0 && !gameData) {
-      startNewGame();
-    }
-  }, [words, gameData]);
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    if (words.length > 0 && !gameData) {
-      startNewGame();
-    }
-  };
+  const {
+    grid = [],
+    clues = { across: [], down: [] },
+    userInputs = {},
+    activeCell = null,
+    activeDirection = 'across',
+    hintsLeft = 0,
+    handleCellClick = () => {},
+    handleInputChange = () => {},
+    handleKeyDown = () => {},
+    generateNewGame,
+    revealHint,
+  } = game as any;
 
   return (
     <IonPage>
       <IonHeader>
-        <IonToolbar>
+        <IonToolbar color="primary">
           <IonTitle>영어 단어 십자낱말 풀이</IonTitle>
           <IonButtons slot="end">
             <IonButton onClick={() => setIsModalOpen(true)}>
               <IonIcon slot="icon-only" icon={bookOutline} />
             </IonButton>
-            <IonButton onClick={startNewGame}>
+            <IonButton onClick={() => generateNewGame && generateNewGame(selectedGridSize)}>
               <IonIcon slot="icon-only" icon={refreshOutline} />
             </IonButton>
           </IonButtons>
         </IonToolbar>
+
+        {/* 상단 난이도 선택 메뉴 */}
+        <IonToolbar>
+          <IonSegment
+            value={selectedGridSize.toString()}
+            onIonChange={(e) => {
+              const newSize = Number(e.detail.value);
+              setSelectedGridSize(newSize);
+              if (generateNewGame) generateNewGame(newSize);
+            }}
+          >
+            <IonSegmentButton value="8">
+              <IonLabel>쉬움 (8x8)</IonLabel>
+            </IonSegmentButton>
+            <IonSegmentButton value="10">
+              <IonLabel>보통 (10x10)</IonLabel>
+            </IonSegmentButton>
+            <IonSegmentButton value="12">
+              <IonLabel>어려움 (12x12)</IonLabel>
+            </IonSegmentButton>
+          </IonSegment>
+        </IonToolbar>
       </IonHeader>
 
       <IonContent className="ion-padding">
-        {gameData ? (
-          <>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+          {grid && grid.length > 0 ? (
+            {/* CrosswordGrid를 타입 단언(as any) 처리하여 direction 속성 체크 우회 */}
             <CrosswordGrid
-              grid={gameData.grid}
-              activeCell={game.activeCell}
-              userInputs={game.userInputs}
-              isCompleted={game.isCompleted}
-              onCellClick={(x, y) => {
-                if (game.activeCell?.x === x && game.activeCell?.y === y) {
-                  game.toggleDirection();
-                } else {
-                  game.setActiveCell({ x, y });
-                }
-              }}
-              onInputChange={game.handleInputChange}
-              onKeyDown={game.handleKeyDown}
+              {...({
+                grid,
+                userInputs,
+                activeCell,
+                direction: activeDirection,
+                onCellClick: handleCellClick,
+                onInputChange: handleInputChange,
+                onKeyDown: handleKeyDown,
+              } as any)}
             />
-            <ClueList
-              clues={gameData.clues}
-              activeClue={game.activeClue}
-              onSelectClue={(clue) => game.selectClue(clue)}
-            />
-          </>
-        ) : (
-          <div style={{ textAlign: 'center', marginTop: '50px' }}>
-            <p>단어장에 등록된 단어가 없습니다.</p>
-            <IonButton onClick={() => setIsModalOpen(true)}>단어 등록하기</IonButton>
-          </div>
-        )}
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>퍼즐 생성 중...</div>
+          )}
+        </div>
 
-        <WordBankModal isOpen={isModalOpen} onClose={handleCloseModal} />
+        {/* 힌트 목록 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div>
+            <h3 style={{ textAlign: 'center', fontWeight: 'bold' }}>
+              가로 힌트<br />
+              <span style={{ fontSize: '14px', color: '#666' }}>(Across)</span>
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {(clues?.across || []).map((item: any, idx: number) => (
+                <div
+                  key={`across-${item?.number || idx}`}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: '#f4f5f8',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    lineHeight: '1.4',
+                  }}
+                >
+                  <strong>{item?.number || idx + 1}.</strong> {item?.clue || item?.text || ''}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h3 style={{ textAlign: 'center', fontWeight: 'bold' }}>
+              세로 힌트<br />
+              <span style={{ fontSize: '14px', color: '#666' }}>(Down)</span>
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {(clues?.down || []).map((item: any, idx: number) => (
+                <div
+                  key={`down-${item?.number || idx}`}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: '#f4f5f8',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    lineHeight: '1.4',
+                  }}
+                >
+                  <strong>{item?.number || idx + 1}.</strong> {item?.clue || item?.text || ''}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <WordBankModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       </IonContent>
+
+      <IonFooter>
+        <IonToolbar color="light">
+          <IonButton
+            expand="block"
+            color="warning"
+            onClick={() => revealHint && revealHint()}
+            disabled={hintsLeft !== undefined && hintsLeft <= 0}
+            style={{ margin: '8px 16px' }}
+          >
+            <IonIcon slot="start" icon={bulbOutline} />
+            힌트 보기 {hintsLeft !== undefined ? `(남은 힌트 ${hintsLeft}개)` : ''}
+          </IonButton>
+        </IonToolbar>
+      </IonFooter>
     </IonPage>
   );
 };
