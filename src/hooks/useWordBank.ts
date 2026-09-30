@@ -106,6 +106,10 @@ export const useWordBank = () => {
     );
   };
 
+  const getBookmarkedWords = () => {
+    return words.filter((w) => w.isUsed);
+  };
+
   const clearWords = () => {
     setWords([]);
     localStorage.removeItem(STORAGE_KEY);

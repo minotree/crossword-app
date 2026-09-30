@@ -193,6 +193,28 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     }
   };
 
+  const handleWordDetail = (wordId: string) => {
+    // Implement navigation to word detail modal
+    console.log('Navigate to word detail for:', wordId);
+  };
+    if (grid[y] && grid[y][x]) {
+      const key = `${x},${y}`;
+      setUserInputs((prev) => ({ ...prev, [key]: grid[y][x].letter }));
+      setHintCount((prev) => prev - 1);
+    }
+  };
+
+  const handleWordDetail = (wordId: string) => {
+    // Implement navigation to word detail modal
+    console.log('Navigate to word detail for:', wordId);
+  };
+    if (grid[y] && grid[y][x]) {
+      const key = `${x},${y}`;
+      setUserInputs((prev) => ({ ...prev, [key]: grid[y][x].letter }));
+      setHintCount((prev) => prev - 1);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent, x: number, y: number) => {
     if (e.key === 'h' && hintCount > 0) {
       revealSingleLetterHint(x, y);

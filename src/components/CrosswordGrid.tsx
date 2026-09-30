@@ -104,6 +104,7 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
                   value={currentVal}
                   onChange={(e) => onInputChange(x, y, e.target.value)}
                   onKeyDown={(e) => onKeyDown(e, x, y)}
+                  onClick={() => handleWordDetail(cell.wordId)}
                   style={{
                     width: '100%',
                     height: '100%',
