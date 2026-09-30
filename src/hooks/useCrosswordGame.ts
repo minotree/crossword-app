@@ -12,6 +12,8 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
   const [activeClue, setActiveClue] = useState<CrosswordClue | null>(null);
   const [userInputs, setUserInputs] = useState<{ [key: string]: string }>({});
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
+  const [hintCount, setHintCount] = useState<number>(5); // Initial hint count
+  const [startTime, setStartTime] = useState<number>(Date.now());
 
   // 사용자가 힌트 버튼을 클릭했는지 감지하는 플래그
   const isClueSelectedRef = useRef<boolean>(false);
@@ -136,10 +138,42 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     return null;
   };
 
+  const checkAnswers = () => {
+    let allCorrect = true;
+    let filledCount = 0;
+    let totalCells = 0;
+
+    for (let r = 0; r < grid.length; r++) {
+      for (let c = 0; c < grid[r].length; c++) {
+        const cell = grid[r][c];
+        if (cell) {
+          totalCells++;
+          const input = userInputs[`${c},${r}`] || '';
+          if (input.toUpperCase() === cell.letter.toUpperCase()) {
+            filledCount++;
+          } else {
+            allCorrect = false;
+          }
+        }
+      }
+    }
+
+    if (totalCells > 0 && filledCount === totalCells && allCorrect) {
+      setIsCompleted(true);
+      const usedWordIds = clues.map((clue) => clue.wordId);
+      markWordsAsUsed(usedWordIds);
+      const elapsedTime = Date.now() - startTime;
+      const accuracyScore = (filledCount / totalCells) * 100;
+      console.log('Elapsed Time:', elapsedTime, 'ms');
+      console.log('Accuracy Score:', accuracyScore.toFixed(2), '%');
+    }
+  };
+
   const handleInputChange = (x: number, y: number, val: string) => {
     const char = val.slice(-1).toUpperCase();
     const key = `${x},${y}`;
     setUserInputs((prev) => ({ ...prev, [key]: char }));
+    checkAnswers();
 
     if (char) {
       const next = getNextCell(x, y, activeDirection);
@@ -151,7 +185,18 @@ export const useCrosswordGame = ({ grid, clues }: UseCrosswordGameProps) => {
     }
   };
 
+  const revealSingleLetterHint = (x: number, y: number) => {
+    if (grid[y] && grid[y][x]) {
+      const key = `${x},${y}`;
+      setUserInputs((prev) => ({ ...prev, [key]: grid[y][x].letter }));
+      setHintCount((prev) => prev - 1);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent, x: number, y: number) => {
+    if (e.key === 'h' && hintCount > 0) {
+      revealSingleLetterHint(x, y);
+    }
     const key = `${x},${y}`;
 
     if (e.key === 'Backspace') {

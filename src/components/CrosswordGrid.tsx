@@ -116,6 +116,7 @@ export const CrosswordGrid: React.FC<CrosswordGridProps> = ({
                     textTransform: 'uppercase',
                     cursor: 'pointer',
                     color: isCompleted ? '#2e7d32' : '#000',
+                    backgroundColor: isCompleted && currentVal.toUpperCase() === cell.letter.toUpperCase() ? '#c8e6c9' : bgColor,
                   }}
                 />
               </div>

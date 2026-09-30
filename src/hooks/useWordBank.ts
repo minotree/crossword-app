@@ -110,6 +110,12 @@ export const useWordBank = () => {
     );
   };
 
+  const markWordsAsUsed = (usedIds: string[]) => {
+    setWords((prev) =>
+      prev.map((w) => (usedIds.includes(w.id) ? { ...w, isQuizUsed: true } : w))
+    );
+  };
+
   const clearWords = () => {
     setWords([]);
     localStorage.removeItem(STORAGE_KEY);
