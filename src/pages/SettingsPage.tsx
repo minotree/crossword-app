@@ -90,7 +90,7 @@ export const SettingsPage: React.FC = () => {
             <IonLabel>
               <h2>앱 이름 및 버전</h2>
               <p>English Crossword Puzzle v1.0.0</p>
-              <p>유민이를 위하여</p>
+              <p className="highlight">유민이를 위하여</p>
             </IonLabel>
           </IonItem>
 
