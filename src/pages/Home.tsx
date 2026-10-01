@@ -11,7 +11,7 @@ import {
 import { gameControllerOutline, bookOutline } from 'ionicons/icons';
 import { useNavigate } from 'react-router-dom';
 
-// 가족사진 올바르게 임포트
+// 가족사진 임포트
 import familyPhoto from '../assets/family.jpg';
 
 export const Home: React.FC = () => {
@@ -44,12 +44,14 @@ export const Home: React.FC = () => {
             />
           </div>
           
-          <h2 style={{ fontWeight: 'bold', fontSize: '20px', color: '#222', marginBottom: '8px' }}>
-            영어 단어 십자낱말 풀이에 오신 것을 환영합니다!
+          {/* 타이틀 텍스트 (반응형 줄바꿈 적용) */}
+          <h2 style={{ fontWeight: 'bold', fontSize: '19px', color: '#222', marginBottom: '12px', padding: '0 10px', wordBreak: 'keep-all', lineHeight: 1.4 }}>
+            영어 단어 십자낱말 풀이에 <br className="break-mobile" />오신 것을 환영합니다!
           </h2>
           
-          <p style={{ color: '#666', fontSize: '13px', maxWidth: '300px', marginBottom: '28px', lineHeight: 1.4 }}>
-            단어장에 저장된 단어들로 맞춤형 십자낱말 퍼즐을 즐기고 영어 실력을 키워보세요.
+          {/* 설명 텍스트 */}
+          <p style={{ color: '#666', fontSize: '13px', maxWidth: '320px', marginBottom: '28px', lineHeight: 1.5, wordBreak: 'keep-all' }}>
+            단어장에 저장된 단어들로 맞춤형 십자낱말 퍼즐을 즐기고 <br />영어 실력을 키워보세요.
           </p>
 
           <div style={{ width: '100%', maxWidth: '300px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -64,6 +66,18 @@ export const Home: React.FC = () => {
             </IonButton>
           </div>
         </div>
+
+        {/* 모바일 화면 크기에 따른 줄바꿈 제어 스타일 */}
+        <style>{`
+          .break-mobile {
+            display: inline;
+          }
+          @media (max-width: 480px) {
+            .break-mobile {
+              display: block;
+            }
+          }
+        `}</style>
       </IonContent>
     </IonPage>
   );
