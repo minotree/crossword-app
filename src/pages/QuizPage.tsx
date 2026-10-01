@@ -20,7 +20,7 @@ import useWordBank from '../hooks/useWordBank';
 import { generateCrosswordGame } from '../utils/crosswordGenerator';
 
 export const QuizPage: React.FC = () => {
-  const { words } = useWordBank();
+  const { words, markWordsAsUsed } = useWordBank();
   const [selectedGridSize, setSelectedGridSize] = useState<number>(10);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClue, setSelectedClue] = useState<any | null>(null);
@@ -47,6 +47,7 @@ export const QuizPage: React.FC = () => {
           id: w.id || `w-${idx}`,
           word: (w.word || '').toUpperCase().replace(/[^A-Z]/g, ''),
           clue: w.meaning || w.clue || '뜻 없음',
+          synonym: w.synonym || '', // 동의어 매핑 추가
         }))
         .filter((item) => item.word.length >= 2);
 
@@ -64,11 +65,18 @@ export const QuizPage: React.FC = () => {
       }
 
       if (generated && generated.grid && generated.clues.length > 0) {
+        // 원본 단어의 동의어 정보를 생성된 힌트 객체에 연결
+        const enrichClues = (clues: any[]) =>
+          clues.map((c) => {
+            const original = wordItems.find((w) => w.word === c.word);
+            return { ...c, synonym: original ? original.synonym : '' };
+          });
+
         setPuzzleData({
           grid: generated.grid,
-          acrossClues: generated.clues.filter((c) => c.direction === 'across'),
-          downClues: generated.clues.filter((c) => c.direction === 'down'),
-          allClues: generated.clues,
+          acrossClues: enrichClues(generated.clues.filter((c) => c.direction === 'across')),
+          downClues: enrichClues(generated.clues.filter((c) => c.direction === 'down')),
+          allClues: enrichClues(generated.clues),
         });
         setUserInputs({});
         setHintsLeft(3);
@@ -82,13 +90,13 @@ export const QuizPage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!words || words.length === 0) {
+    if (words && words.length > 0) {
+      loadPuzzle(selectedGridSize);
+    } else {
       setPuzzleData({ grid: [], acrossClues: [], downClues: [], allClues: [] });
       setUserInputs({});
-    } else {
-      loadPuzzle(selectedGridSize);
     }
-  }, [words, selectedGridSize]);
+  }, [selectedGridSize]);
 
   const handleClueClick = (clue: any) => {
     if (!clue) return;
@@ -108,6 +116,15 @@ export const QuizPage: React.FC = () => {
       newInputs[`${targetC},${targetR}`] = enteredWord[i] || '';
     }
     setUserInputs(newInputs);
+
+    if (enteredWord.trim().toUpperCase() === word.toUpperCase()) {
+      const matchedWord = words.find(
+        (w) => (w.word || '').toUpperCase().replace(/[^A-Z]/g, '') === word.toUpperCase()
+      );
+      if (matchedWord && markWordsAsUsed) {
+        markWordsAsUsed([matchedWord.id]);
+      }
+    }
   };
 
   const getExistingWordValue = (clue: any) => {
@@ -162,11 +179,12 @@ export const QuizPage: React.FC = () => {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
-        <div style={{ display: 'flex', flexDirection: 'column', paddingBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px', width: '100%' }}>
+      <IonContent style={{ '--padding-start': '10px', '--padding-end': '10px', '--padding-top': '8px', '--padding-bottom': '8px' } as any}>
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', paddingBottom: '10px' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', width: '100%' }}>
             {isGridReady ? (
-              <div style={{ width: '100%', maxWidth: '300px' }}>
+              <div style={{ width: '100%', maxWidth: '380px', display: 'flex', justifyContent: 'center' }}>
                 <CrosswordComponent
                   grid={puzzleData.grid}
                   userInputs={userInputs}
@@ -174,8 +192,8 @@ export const QuizPage: React.FC = () => {
                 />
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '30px 20px', backgroundColor: '#f9f9f9', borderRadius: '12px', width: '100%', maxWidth: '300px' }}>
-                <p style={{ fontSize: '14px', color: '#555', marginBottom: '12px' }}>
+              <div style={{ textAlign: 'center', padding: '20px', backgroundColor: '#f9f9f9', borderRadius: '12px', width: '100%', maxWidth: '380px' }}>
+                <p style={{ fontSize: '14px', color: '#555', marginBottom: '10px' }}>
                   등록된 단어가 없거나 단어장을 불러오는 중입니다.
                 </p>
                 <IonButton fill="solid" color="primary" onClick={() => setIsModalOpen(true)} size="small">
@@ -187,32 +205,44 @@ export const QuizPage: React.FC = () => {
           </div>
 
           {isGridReady && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <div>
-                <h3 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px', margin: '0 0 4px' }}>가로 힌트</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '270px', overflowY: 'auto', paddingRight: '4px' }}>
+                <h3 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '13px', margin: '0 0 4px' }}>가로 힌트</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '210px', overflowY: 'auto', paddingRight: '2px' }}>
                   {puzzleData.acrossClues.map((item: any, idx: number) => (
                     <div
                       key={`across-${idx}`}
                       onClick={() => handleClueClick(item)}
-                      style={{ padding: '8px 10px', backgroundColor: '#eef3fc', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', border: '1px solid #d0e0f8' }}
+                      style={{ padding: '6px 8px', backgroundColor: '#eef3fc', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', border: '1px solid #d0e0f8' }}
                     >
-                      <strong>{item?.number}.</strong> {item?.clue} <span style={{ color: '#0066cc', fontWeight: 'bold' }}>({item?.word?.length})</span>
+                      <strong>{item?.number}.</strong> {item?.clue}{' '}
+                      <span style={{ color: '#0066cc', fontWeight: 'bold' }}>({item?.word?.length})</span>
+                      {item?.synonym && (
+                        <div style={{ color: '#7b1fa2', fontSize: '10px', marginTop: '2px', fontWeight: '500' }}>
+                          동의어: {item.synonym}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
 
               <div>
-                <h3 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '14px', margin: '0 0 4px' }}>세로 힌트</h3>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '270px', overflowY: 'auto', paddingRight: '4px' }}>
+                <h3 style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '13px', margin: '0 0 4px' }}>세로 힌트</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '210px', overflowY: 'auto', paddingRight: '2px' }}>
                   {puzzleData.downClues.map((item: any, idx: number) => (
                     <div
                       key={`down-${idx}`}
                       onClick={() => handleClueClick(item)}
-                      style={{ padding: '8px 10px', backgroundColor: '#eef3fc', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', border: '1px solid #d0e0f8' }}
+                      style={{ padding: '6px 8px', backgroundColor: '#eef3fc', borderRadius: '6px', fontSize: '11px', cursor: 'pointer', border: '1px solid #d0e0f8' }}
                     >
-                      <strong>{item?.number}.</strong> {item?.clue} <span style={{ color: '#0066cc', fontWeight: 'bold' }}>({item?.word?.length})</span>
+                      <strong>{item?.number}.</strong> {item?.clue}{' '}
+                      <span style={{ color: '#0066cc', fontWeight: 'bold' }}>({item?.word?.length})</span>
+                      {item?.synonym && (
+                        <div style={{ color: '#7b1fa2', fontSize: '10px', marginTop: '2px', fontWeight: '500' }}>
+                          동의어: {item.synonym}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

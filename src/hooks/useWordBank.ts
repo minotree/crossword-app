@@ -9,6 +9,7 @@ export interface WordItem {
   partOfSpeech?: string;
   example?: string;
   exampleMeaning?: string;
+  synonym?: string; // 1. 동의어 속성 추가
   isUsed?: boolean;
   isQuizUsed?: boolean;
   isBookmarked?: boolean;
@@ -32,7 +33,6 @@ export const useWordBank = () => {
     }
   });
 
-  // 데이터 변경 및 동기화를 안전하게 처리하는 헬퍼 함수 (무한 루프 방지)
   const saveAndSync = (newWords: WordItem[]) => {
     setWords(newWords);
     try {
@@ -43,7 +43,6 @@ export const useWordBank = () => {
     }
   };
 
-  // 다른 탭이나 설정 화면 등에서 변경된 경우 동기화
   useEffect(() => {
     const handleSync = () => {
       try {
@@ -120,6 +119,7 @@ export const useWordBank = () => {
               partOfSpeech: row.partOfSpeech ? String(row.partOfSpeech).trim() : '',
               example: row.example ? String(row.example).trim() : '',
               exampleMeaning: row.exampleMeaning ? String(row.exampleMeaning).trim() : '',
+              synonym: row.synonym ? String(row.synonym).trim() : '', // 2. 동의어 데이터 저장 처리 추가
               isUsed: false,
               isQuizUsed: false,
               isBookmarked: false,

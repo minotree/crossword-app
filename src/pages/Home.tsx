@@ -67,7 +67,7 @@ export const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* 모바일 화면 크기에 따른 줄바꿈 제어 스타일 */}
+        {/* 모바일 화면 크기에 따른 줄바꿈 제어 스타일 */} 
         <style>{`
           .break-mobile {
             display: inline;

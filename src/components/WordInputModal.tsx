@@ -153,6 +153,13 @@ export const WordInputModal: React.FC<WordInputModalProps> = ({
           <div style={{ fontSize: '13px', color: '#0066cc', fontWeight: 'bold' }}>
             ({wordLength}글자 단어)
           </div>
+
+          {/* 동의어가 있을 경우 모달에도 보라색으로 표시 */}
+          {clue.synonym && (
+            <div style={{ color: '#7b1fa2', fontSize: '12px', fontWeight: '500', marginTop: '4px' }}>
+              동의어: {clue.synonym}
+            </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
